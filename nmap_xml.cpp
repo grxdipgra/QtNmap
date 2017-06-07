@@ -1,11 +1,9 @@
 #include "nmap_xml.h"
-#include "qdebug.h"
 #include <QXmlStreamReader>
 #include <QTemporaryFile>
-#include "QDebug"
 #include "QProcess"
 #include <QTemporaryFile>
-
+#include "qdebug.h"
 
 
 NMap::NMap():QXmlStreamReader(){//Constructor
@@ -16,7 +14,7 @@ NMap::~NMap() {//Destructor
 }
 
 /****************copy_nmapscan*****************************
- * Copia en tmp_nmapscan es el struct NMapScan,
+ * Copia en tmp_nmapscan el struct NMapScan,
  * donde se guardan todos los datos de la consulta de nmap
  * *******************************************************/
 
@@ -317,6 +315,7 @@ void NMap::nmap_host() {
 
 void NMap::nmap_ports(Host &host) {
     Port port;
+    qDebug() << reader.name();
         do{
             if ((!reader.isEndElement()) && (reader.name()!=""))
                 nmap_port(port);
@@ -331,35 +330,93 @@ void NMap::nmap_ports(Host &host) {
 }
 
 void NMap::nmap_os(Host &host) {
-/* OS os;
-        do{
-            if ((!reader.isEndElement()) && (reader.name()!=""))
-                nmap_os_match(os);
-            else
-                if ((reader.isEndElement())&&(reader.name()=="os"))
-                    host.append(os);
+ Portused portused;
+ OSMatch osmatch;
+
+         do{
             if (!reader.atEnd())
                 reader.readNext();
-            }
-        while (reader.name()!="os");
-}*/
+            if ((!reader.isEndElement()) && (reader.name()!=""))
+                if (reader.name()=="portused"){
+                    nmap_os_portused(portused);
+                    host.os.portused.append(portused);
+                }
+                else
+                if (reader.name()=="osmatch"){
+                    nmap_os_match(osmatch);
+                    host.os.osmatch.append(osmatch);
+                }
+
+        }while (reader.name()!="os");
 }
 
-void NMap::nmap_os_match(OS &os) {
-/*
-     if (reader.name()=="port"){
-         nmap_port_port(port);
-         }
-     else
-        if (reader.name()=="state"){
-            nmap_port_state(port);
-        }
-     else
-        if (reader.name()=="service"){
-            nmap_port_service(port);
-        }
-        */
+
+void NMap::nmap_os_match(OSMatch &osmatch) {
+    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+             QString atributo = attr.name().toString();
+             QString valor_atributo = attr.value().toString();
+             if (atributo == "name")
+                    osmatch.name = valor_atributo;
+             else
+                 if (atributo == "accuracy")
+                    osmatch.accuracy = valor_atributo;
+             else
+                 if (atributo == "line")
+                    osmatch.line = valor_atributo;
+    }
+
+    do{
+         if (reader.name()=="osclass")
+             nmap_os_osclass(osmatch);
+
+         reader.readNext();
+
+    }
+    while (reader.name()!="osmatch");
+
 }
+
+void NMap::nmap_os_osclass(OSMatch &osmatch){
+    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+             QString atributo = attr.name().toString();
+             QString valor_atributo = attr.value().toString();
+             if (atributo == "type")
+                    osmatch.osclass.type = valor_atributo;
+             else
+                 if (atributo == "vendor")
+                    osmatch.osclass.vendor = valor_atributo;
+             else
+                 if (atributo == "osfamily")
+                    osmatch.osclass.osfamily = valor_atributo;
+             else
+                 if (atributo == "osgen")
+                    osmatch.osclass.osgen = valor_atributo;
+             else
+                 if (atributo == "accuracy")
+                    osmatch.osclass.accuracy = valor_atributo;
+
+
+     }
+}
+
+void NMap::nmap_os_portused(Portused &portused){
+
+    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+              QString atributo = attr.name().toString();
+              QString valor_atributo = attr.value().toString();
+              if (atributo == "state")
+                     portused.state = valor_atributo;
+              else
+                  if (atributo == "proto")
+                     portused.proto = valor_atributo;
+              else
+                  if (atributo == "portid")
+                     portused.portid = valor_atributo;
+
+    }
+
+}
+
 
 void NMap::nmap_port(Port &port) {
      if (reader.name()=="port")
@@ -374,7 +431,6 @@ void NMap::nmap_port(Port &port) {
 
 void NMap::nmap_port_port(Port &port){
     foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-        qDebug()<<"nmap_port_port" <<reader.name();
               QString atributo = attr.name().toString();
               QString valor_atributo = attr.value().toString();
 

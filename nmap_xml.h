@@ -2,7 +2,6 @@
 #define NMAP_H
 #include <QXmlStreamReader>
 #include <QTemporaryFile>
-#include "QDebug"
 #include "QProcess"
 #include <QTemporaryFile>
 
@@ -71,7 +70,7 @@ struct OSMatch{
 };
 
 struct OS{
-    Portused portused;
+    QList <Portused> portused;
     QList <OSMatch> osmatch;
 };
 
@@ -236,7 +235,9 @@ private:
     void nmap_ipidsequence(Host &host);
     void nmap_tcptssequence(Host &host);
     void nmap_os(Host &host);
-    void nmap_os_match(OS &os);
+    void nmap_os_match(OSMatch &osmatch);
+    void nmap_os_portused(Portused &portused);
+    void nmap_os_osclass(OSMatch &osmatch);
     void nmap_port(Port &port);
     void nmap_port_port(Port &port);
     void nmap_port_state(Port &port);
