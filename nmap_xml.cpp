@@ -35,7 +35,8 @@ void NMap::nmap_run_scan(QString opciones, QString equipos){
         process.waitForFinished(-1);
         reader.addData(file.readAll());
         file.close();
-    }
+        qDebug()<<"terminado scan";
+       }
     readXML();
 }
 
@@ -268,6 +269,7 @@ void NMap::nmap_host() {
      Host host;
 
      do{
+       if ((!reader.isEndElement()) && (reader.name()!=""))
           if (reader.name()=="host")
               nmap_host_host(host);
           else
@@ -309,33 +311,45 @@ void NMap::nmap_host() {
      }
      while (reader.name()!="host");
      nmapscan.host.append(host);
-
-
 }
 
 void NMap::nmap_ports(Host &host) {
     Port port;
-    qDebug() << reader.name();
-        do{
-            if ((!reader.isEndElement()) && (reader.name()!=""))
-                nmap_port(port);
+
+      do{
+
+          if (!reader.isEndElement())
+            if (reader.name()=="extraports")
+                nmap_ports_extraports(host);
             else
-                if ((reader.isEndElement())&&(reader.name()=="port"))
+                if (reader.name()=="extrareasons")
+                    nmap_ports_extrareasons(host);
+            else
+                if (reader.name()=="port"){
+                    nmap_port(port);
                     host.ports.port.append(port);
+                }
 
             if (!reader.atEnd())
                 reader.readNext();
             }
-        while (reader.name()!="ports");
+      while (reader.name()!="ports");
 }
 
 void NMap::nmap_os(Host &host) {
+ int control=0;
  Portused portused;
  OSMatch osmatch;
 
          do{
+            if (control > 100)
+                break;
+            control++;
+
             if (!reader.atEnd())
                 reader.readNext();
+            qDebug ()<< "nmap_os"<< control;
+            qDebug ()<< "nmap_os"<<reader.name();
             if ((!reader.isEndElement()) && (reader.name()!=""))
                 if (reader.name()=="portused"){
                     nmap_os_portused(portused);
@@ -350,8 +364,9 @@ void NMap::nmap_os(Host &host) {
         }while (reader.name()!="os");
 }
 
-
 void NMap::nmap_os_match(OSMatch &osmatch) {
+    int control=0;
+    OSClass osclass;
     foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
              QString atributo = attr.name().toString();
              QString valor_atributo = attr.value().toString();
@@ -366,37 +381,67 @@ void NMap::nmap_os_match(OSMatch &osmatch) {
     }
 
     do{
-         if (reader.name()=="osclass")
-             nmap_os_osclass(osmatch);
+        if (control > 100)
+            break;
+        control++;
+qDebug ()<<"os_match"<< control;
+        if ((!reader.isEndElement()) && (reader.name()=="osclass"))
+        {
+             nmap_os_osclass(osclass);
+             osmatch.osclass.append(osclass);
+         }
 
-         reader.readNext();
+         if (!reader.atEnd())
+             reader.readNext();
+qDebug ()<< "osmatch"<<reader.name();
 
     }
     while (reader.name()!="osmatch");
 
 }
 
-void NMap::nmap_os_osclass(OSMatch &osmatch){
+void NMap::nmap_os_osclass(OSClass &osclass){
+int control=0;
     foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
              QString atributo = attr.name().toString();
              QString valor_atributo = attr.value().toString();
              if (atributo == "type")
-                    osmatch.osclass.type = valor_atributo;
+                    osclass.type = valor_atributo;
              else
                  if (atributo == "vendor")
-                    osmatch.osclass.vendor = valor_atributo;
+                    osclass.vendor = valor_atributo;
              else
                  if (atributo == "osfamily")
-                    osmatch.osclass.osfamily = valor_atributo;
+                    osclass.osfamily = valor_atributo;
              else
                  if (atributo == "osgen")
-                    osmatch.osclass.osgen = valor_atributo;
+                    osclass.osgen = valor_atributo;
              else
                  if (atributo == "accuracy")
-                    osmatch.osclass.accuracy = valor_atributo;
-
+                    osclass.accuracy = valor_atributo;
 
      }
+    do{
+        if (control > 100)
+            break;
+        control++;
+        if (!reader.atEnd())
+            reader.readNext();
+        if ((!reader.isEndElement()) && (reader.name()=="cpe"))
+        {
+             nmap_os_cpe(osclass);
+        }
+qDebug ()<<"os_class"<< control;
+qDebug ()<< "os_class"<<reader.name();
+    }
+
+    while (reader.name()!="osmatch");
+}
+
+void NMap::nmap_os_cpe (OSClass &osclass){
+    CPE cpe;
+    cpe.cpe = reader.readElementText();
+    osclass.cpe.append(cpe);
 }
 
 void NMap::nmap_os_portused(Portused &portused){
@@ -417,16 +462,49 @@ void NMap::nmap_os_portused(Portused &portused){
 
 }
 
-
 void NMap::nmap_port(Port &port) {
-     if (reader.name()=="port")
-         nmap_port_port(port);
-     else
-        if (reader.name()=="state")
-            nmap_port_state(port);
-     else
-        if (reader.name()=="service")
-            nmap_port_service(port);
+    do{
+        if (!reader.isEndElement())
+
+            if (reader.name()=="port")
+                nmap_port_port(port);
+            else
+                if (reader.name()=="state")
+                    nmap_port_state(port);
+            else
+                if (reader.name()=="service")
+                    nmap_port_service(port);
+
+        if (!reader.atEnd())
+            reader.readNext();
+    }
+     while (reader.name()!="port");
+}
+
+void NMap::nmap_ports_extrareasons(Host &host){
+    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+              QString atributo = attr.name().toString();
+              QString valor_atributo = attr.value().toString();
+
+              if (atributo == "reason")
+                     host.ports.extrareasons.reason= valor_atributo;
+              else
+                  if (atributo == "count")
+                     host.ports.extrareasons.count = valor_atributo;
+    }
+}
+
+void NMap::nmap_ports_extraports(Host &host){
+    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+              QString atributo = attr.name().toString();
+              QString valor_atributo = attr.value().toString();
+
+              if (atributo == "state")
+                     host.ports.extraports.state= valor_atributo;
+              else
+                  if (atributo == "count")
+                     host.ports.extraports.count = valor_atributo;
+    }
 }
 
 void NMap::nmap_port_port(Port &port){
@@ -475,7 +553,7 @@ void NMap::nmap_distance(Host &host){
         foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
                   QString atributo = attr.name().toString();
                   QString valor_atributo = attr.value().toString();
-                  if (atributo == "distance")
+                  if (atributo == "value")
                          host.distance.value = valor_atributo;
         }
 }

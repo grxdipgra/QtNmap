@@ -59,14 +59,14 @@ struct OSClass{
     QString osfamily;
     QString osgen;
     QString accuracy;
-    CPE cpe;
+    QList <CPE> cpe;
 };
 
 struct OSMatch{
      QString name;
      QString accuracy;
      QString line;
-     OSClass osclass;
+     QList <OSClass> osclass;
 };
 
 struct OS{
@@ -95,7 +95,6 @@ struct Extrareasons{
     QString reason;
     QString count;
 };
-
 
 struct Port{
     QString protocol;
@@ -237,8 +236,11 @@ private:
     void nmap_os(Host &host);
     void nmap_os_match(OSMatch &osmatch);
     void nmap_os_portused(Portused &portused);
-    void nmap_os_osclass(OSMatch &osmatch);
+    void nmap_os_osclass(OSClass &osclass);
+    void nmap_os_cpe(OSClass &osclass);
     void nmap_port(Port &port);
+    void nmap_ports_extraports(Host &host);
+    void nmap_ports_extrareasons(Host &host);
     void nmap_port_port(Port &port);
     void nmap_port_state(Port &port);
     void nmap_port_service(Port &port);
