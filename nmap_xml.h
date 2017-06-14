@@ -182,12 +182,6 @@ class NMap : public QXmlStreamReader {
 
 public:
     NMap();
-    /*
-     * Si queremos que desde main se puedan manejar el struct y el reader
-     * descomenta esto y quitalo de private
-    NMapScan nmapscan;
-    QXmlStreamReader reader;
-    */
 
 virtual ~NMap();
 
@@ -195,13 +189,12 @@ virtual ~NMap();
     void copy_reader(QXmlStreamReader &tmp_reader);
 
     void nmap_run_scan(QString opciones,QString equipos);
-    int nmap_numero_equipos();
+    //int nmap_numero_equipos();
     bool nmap_is_host_up(QString ip);
     int nmap_num_host_up();
-    bool nmap_is_open_port_nmapscan(QString ip, QString port);
     bool nmap_is_open_port(QString ip, QString port);
     QList <QString> nmap_hosts_up();
-    QList <QString> nmap_ip_hosts_up();
+    QList <QString> nmap_ports_open(QString ip);
     bool is_linux(QString ip);
     bool is_win(QString ip);
     bool is_router(QString ip);
@@ -235,8 +228,10 @@ private:
     void nmap_tcptssequence(Host &host);
     void nmap_os(Host &host);
     void nmap_os_match(OSMatch &osmatch);
+    void nmap_os_match_match(OSMatch &osmatch);
     void nmap_os_portused(Portused &portused);
     void nmap_os_osclass(OSClass &osclass);
+    void nmap_os_osclass_osclass(OSClass &osclass);
     void nmap_os_cpe(OSClass &osclass);
     void nmap_port(Port &port);
     void nmap_ports_extraports(Host &host);

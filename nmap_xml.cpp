@@ -4,7 +4,7 @@
 #include "QProcess"
 #include <QTemporaryFile>
 #include "qdebug.h"
-
+#include <QElapsedTimer>
 
 NMap::NMap():QXmlStreamReader(){//Constructor
 
@@ -35,7 +35,6 @@ void NMap::nmap_run_scan(QString opciones, QString equipos){
         process.waitForFinished(-1);
         reader.addData(file.readAll());
         file.close();
-        qDebug()<<"terminado scan";
        }
     readXML();
 }
@@ -53,7 +52,7 @@ int NMap::nmap_num_host_up(){
  * Usa nmapscan, es decir necesita haber hecho la busqueda nmap antes
  * **************************************************************************/
 
-bool NMap::nmap_is_open_port_nmapscan (QString ip, QString port){
+bool NMap::nmap_is_open_port (QString ip, QString port){
     int i,j,num_equipos,num_port;
     num_equipos = nmap_num_host_up();
     for (i=0;i<num_equipos;i++){
@@ -66,52 +65,83 @@ bool NMap::nmap_is_open_port_nmapscan (QString ip, QString port){
 return false;
 }
 
-/***************************nmap_is_open_port*********************************
- * Devuelve true si el puerto port esta abierto en el equipo pasado por ip
- * Hace la busqueda nmap, es decir no hace falta haber realizado
- * la busqueda nmap antes
- * **************************************************************************/
-
-bool NMap::nmap_is_open_port (QString ip, QString port){
-
-    NMap::nmap_run_scan ("-p "+port,ip);
-    NMap::readXML();
-    if ((nmapscan.host[0].address.addr == ip) && (nmapscan.host[0].ports.port[0].state.state == "open") && (nmapscan.host[0].ports.port[0].portid == port))
-             return true;
-return false;
-}
-
 /************************nmap_hosts_up***************************************
  * Devuelve el listado de ip's que estan activos en un QList <QString>
  * *************************************************************************/
 
 QList <QString> NMap::nmap_hosts_up(){
     QList  <QString> lista;
-    int i,num_equipos;
+    int num_equipos;
     num_equipos = nmap_num_host_up();
-    for (i=0;i<num_equipos;i++)
+    for (int i=0;i<num_equipos;i++)
         lista.append(nmapscan.host[i].address.addr);
 return lista;
 }
 
-bool NMap::nmap_is_host_up (QString ip){//Sin hacer
-
+/************************nmap_port_open***************************************
+ * Devuelve los puertos abiertos de la ip pasada por parametro
+ * *************************************************************************/
+QList <QString> NMap::nmap_ports_open(QString ip){
+    QList  <QString> puertos;
+    int num_equipos;
+    num_equipos = nmap_num_host_up();
+    for (int i=0;i<num_equipos;i++)
+        if ((nmapscan.host[i].address.addr)==ip)
+            for (int j=0;j<nmapscan.host[i].ports.port.count();j++)
+                if (nmapscan.host[i].ports.port[j].state.state=="open")
+                    puertos.append(nmapscan.host[i].ports.port[j].portid);
+return puertos;
 }
 
+/************************nmap_hosts_up***************************************
+ * Devuelve true si la ip pasada por parametro está en la lista de host up
+ * *************************************************************************/
+bool NMap::nmap_is_host_up (QString ip){
+    int contador=0;
+    QList<QString> equipos;
+    QList<QString>::iterator i;
+    equipos=nmap_hosts_up();
+    for (i = equipos.begin(); i != equipos.end() ; ++i){
+        if (ip==*i)
+            return true;
+    }
+    return false;
+}
+
+/************************is_linux***************************************
+ * Devuelve true si el equipo tiene el puerto 8080 abierto
+ * *************************************************************************/
 bool NMap::is_linux (QString ip){
-
+    return nmap_is_open_port(ip,"8080");
+}
+/************************is_win***************************************
+ * Devuelve true si el equipo tiene el puerto rpc abierto
+ * *************************************************************************/
+bool NMap::is_win (QString ip){
+    return nmap_is_open_port(ip,"135");
 }
 
-bool NMap::is_win (QString ip){}
+/************************is_linux***************************************
+ * Devuelve true si el equipo tiene es un router
+ * *************************************************************************/
+bool NMap::is_router (QString ip){
+    if (((ip.split(".")[0])=="10") && ((ip.split(".")[3])=="254"))
+        return true;
+    if (((ip=="192.168.1.1")||(ip=="192.168.0.1")) && (nmap_is_open_port(ip,"80")||nmap_is_open_port(ip,"23")))
+        return true;
 
-bool NMap::is_router (QString ip){}
+return false;
+}
 
+/************************nmap_hosts_up***************************************
+ * Devuelve true si el equipo tiene abierto el puerto 9100. Se supone printer
+ * *************************************************************************/
 bool NMap::is_printer (QString ip){
-    return nmap_is_open_port_nmapscan(ip,"9100");
+    return nmap_is_open_port(ip,"9100");
 }
 
 /*******************************************************************************
- * Metodos auxiliares privados a la clase para meter los datos en el struct
+ * Metodos auxiliares PRIVADOS a la clase para meter los datos en el struct
  * ****************************************************************************/
 
 /**********************************readXML**************************************
@@ -337,19 +367,12 @@ void NMap::nmap_ports(Host &host) {
 }
 
 void NMap::nmap_os(Host &host) {
- int control=0;
  Portused portused;
  OSMatch osmatch;
 
          do{
-            if (control > 100)
-                break;
-            control++;
-
             if (!reader.atEnd())
                 reader.readNext();
-            qDebug ()<< "nmap_os"<< control;
-            qDebug ()<< "nmap_os"<<reader.name();
             if ((!reader.isEndElement()) && (reader.name()!=""))
                 if (reader.name()=="portused"){
                     nmap_os_portused(portused);
@@ -360,13 +383,28 @@ void NMap::nmap_os(Host &host) {
                     nmap_os_match(osmatch);
                     host.os.osmatch.append(osmatch);
                 }
-
-        }while (reader.name()!="os");
+         }
+        while (reader.name()!="os");
 }
 
 void NMap::nmap_os_match(OSMatch &osmatch) {
-    int control=0;
     OSClass osclass;
+    nmap_os_match_match(osmatch);
+    do{
+       if ((!reader.isEndElement()) && (reader.name()=="osclass"))
+        {
+             nmap_os_osclass(osclass);
+             osmatch.osclass.append(osclass);
+         }
+
+         if (!reader.atEnd())
+             reader.readNext();
+    }
+    while (reader.name()!="osmatch");
+}
+
+void NMap::nmap_os_match_match(OSMatch &osmatch) {
+
     foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
              QString atributo = attr.name().toString();
              QString valor_atributo = attr.value().toString();
@@ -380,28 +418,9 @@ void NMap::nmap_os_match(OSMatch &osmatch) {
                     osmatch.line = valor_atributo;
     }
 
-    do{
-        if (control > 100)
-            break;
-        control++;
-qDebug ()<<"os_match"<< control;
-        if ((!reader.isEndElement()) && (reader.name()=="osclass"))
-        {
-             nmap_os_osclass(osclass);
-             osmatch.osclass.append(osclass);
-         }
-
-         if (!reader.atEnd())
-             reader.readNext();
-qDebug ()<< "osmatch"<<reader.name();
-
-    }
-    while (reader.name()!="osmatch");
-
 }
 
-void NMap::nmap_os_osclass(OSClass &osclass){
-int control=0;
+void NMap::nmap_os_osclass_osclass(OSClass &osclass){
     foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
              QString atributo = attr.name().toString();
              QString valor_atributo = attr.value().toString();
@@ -421,21 +440,19 @@ int control=0;
                     osclass.accuracy = valor_atributo;
 
      }
+}
+
+void NMap::nmap_os_osclass(OSClass &osclass){
+nmap_os_osclass_osclass(osclass);
+
     do{
-        if (control > 100)
-            break;
-        control++;
         if (!reader.atEnd())
             reader.readNext();
         if ((!reader.isEndElement()) && (reader.name()=="cpe"))
-        {
-             nmap_os_cpe(osclass);
-        }
-qDebug ()<<"os_class"<< control;
-qDebug ()<< "os_class"<<reader.name();
+                nmap_os_cpe(osclass);
     }
 
-    while (reader.name()!="osmatch");
+    while (reader.name()!="osclass");
 }
 
 void NMap::nmap_os_cpe (OSClass &osclass){
