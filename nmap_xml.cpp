@@ -119,7 +119,9 @@ bool NMap::is_linux (QString ip){
  * Devuelve true si el equipo tiene el puerto rpc abierto
  * *************************************************************************/
 bool NMap::is_win (QString ip){
-    return nmap_is_open_port(ip,"135");
+    if ((nmap_is_open_port(ip,"139")) && (nmap_is_open_port(ip,"445")))
+         return true;
+return false;
 }
 
 /************************is_linux***************************************
@@ -261,7 +263,6 @@ void NMap::nmap_address(Host &host) {
     }
 }
 
-
 void NMap::nmap_hostnames(Host &host) {
     do{
       if (!reader.isEndElement()){
@@ -273,6 +274,7 @@ void NMap::nmap_hostnames(Host &host) {
   }
   while (reader.name()!="hostnames");
 }
+
 void NMap::nmap_hostname(Host &host) {
     foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
               QString atributo = attr.name().toString();

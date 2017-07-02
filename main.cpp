@@ -9,7 +9,7 @@
 int main(int argc, char *argv[])
 {
 
-    QString opciones = "-vvv -p 22,80,8080,9100 ";
+    QString opciones = "-vvv -p 13";
     QString equipos = "192.168.1.*";
     int num_equipos,i,j,num_port,tmp,tmp_i,tmp_x,tmpos;
     NMap* nmap = new NMap();
@@ -18,15 +18,18 @@ int main(int argc, char *argv[])
     nmap->nmap_run_scan(opciones,equipos);
     nmap->copy_nmapscan(NmapScan);
 
-    qDebug ()<< nmap->nmap_ports_open("192.168.1.1");
-    qDebug ()<< nmap->nmap_is_host_up("192.168.1.35");
+    qDebug ()<< nmap->nmap_ports_open("192.168.1.3");
+    qDebug ()<< nmap->nmap_is_host_up("192.168.1.3");
+    qDebug ()<< nmap->is_win("192.168.1.3")<< "ES UN WID¿NDOW";
     qDebug ()<<"ES UN ROUTER"<< nmap->is_router("192.168.1.1");
-    for (i=0;i<256;i++){
+    delete nmap;
+    /*for (i=0;i<256;i++){
         qDebug ()<< i;
         qDebug ()<< NmapScan.host[i].address.addr ;
     qDebug ()<< NmapScan.host[i].hostnames.hostname.name ;
     qDebug ()<< NmapScan.host[i].hostnames.hostname.type ;
     }
+
 
 /*
 
