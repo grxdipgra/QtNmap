@@ -14,6 +14,15 @@ struct NMapRun{
     QString version;
     QString xmloutputversion;
 };
+
+struct Hostname{
+    QString name;
+    QString type;
+};
+struct Hostnames{
+    Hostname hostname;
+};
+
 struct SCanInfo{
     QString type;
     QString protocol;
@@ -141,6 +150,7 @@ struct Host{
     QString endtime;
     Status status;
     Address address;
+    Hostnames hostnames;
     Ports ports;
     OS os;
     Times times;
@@ -216,6 +226,7 @@ private:
     void nmap_scaninfo();
     void nmap_host_host(Host &host);
     void nmap_hostname(Host &host);
+    void nmap_hostnames(Host &host);
     void nmap_address(Host &host);
     void nmap_status(Host &host);
     void nmap_ports(Host &host);

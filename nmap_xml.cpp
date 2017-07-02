@@ -2,9 +2,8 @@
 #include <QXmlStreamReader>
 #include <QTemporaryFile>
 #include "QProcess"
-#include <QTemporaryFile>
 #include "qdebug.h"
-#include <QElapsedTimer>
+
 
 NMap::NMap():QXmlStreamReader(){//Constructor
 
@@ -36,6 +35,9 @@ void NMap::nmap_run_scan(QString opciones, QString equipos){
         reader.addData(file.readAll());
         file.close();
        }
+    else
+        qDebug() << "No se ha podido abrir el fichero necesario  ";
+
     readXML();
 }
 
@@ -97,7 +99,6 @@ return puertos;
  * Devuelve true si la ip pasada por parametro está en la lista de host up
  * *************************************************************************/
 bool NMap::nmap_is_host_up (QString ip){
-    int contador=0;
     QList<QString> equipos;
     QList<QString>::iterator i;
     equipos=nmap_hosts_up();
@@ -122,7 +123,7 @@ bool NMap::is_win (QString ip){
 }
 
 /************************is_linux***************************************
- * Devuelve true si el equipo tiene es un router
+ * Devuelve true si el equipo es un router (lo mas probable)
  * *************************************************************************/
 bool NMap::is_router (QString ip){
     if (((ip.split(".")[0])=="10") && ((ip.split(".")[3])=="254"))
@@ -260,10 +261,27 @@ void NMap::nmap_address(Host &host) {
     }
 }
 
+
+void NMap::nmap_hostnames(Host &host) {
+    do{
+      if (!reader.isEndElement()){
+        if (reader.name()=="hostname")
+            nmap_hostname(host);
+      }
+      if (!reader.atEnd())
+            reader.readNext();
+  }
+  while (reader.name()!="hostnames");
+}
 void NMap::nmap_hostname(Host &host) {
     foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
               QString atributo = attr.name().toString();
               QString valor_atributo = attr.value().toString();
+              if (atributo == "name" )
+                    host.hostnames.hostname.name = valor_atributo;
+              else
+                if (atributo == "type")
+                    host.hostnames.hostname.type = valor_atributo;
     }
 }
 
@@ -299,7 +317,7 @@ void NMap::nmap_host() {
      Host host;
 
      do{
-       if ((!reader.isEndElement()) && (reader.name()!=""))
+       if ((!reader.isEndElement()) && (reader.name()!="")){
           if (reader.name()=="host")
               nmap_host_host(host);
           else
@@ -310,7 +328,7 @@ void NMap::nmap_host() {
                   nmap_address(host);
           else
               if (reader.name()=="hostnames")
-                  nmap_hostname(host);
+                  nmap_hostnames(host);
           else
               if (reader.name()=="ports")
                   nmap_ports(host);
@@ -335,8 +353,8 @@ void NMap::nmap_host() {
           else
               if (reader.name()=="tcptssequence")
                   nmap_tcptssequence(host);
-
-         reader.readNext();
+       }
+       reader.readNext();
 
      }
      while (reader.name()!="host");
@@ -348,21 +366,21 @@ void NMap::nmap_ports(Host &host) {
 
       do{
 
-          if (!reader.isEndElement())
+          if (!reader.isEndElement()){
             if (reader.name()=="extraports")
                 nmap_ports_extraports(host);
             else
                 if (reader.name()=="extrareasons")
                     nmap_ports_extrareasons(host);
-            else
-                if (reader.name()=="port"){
-                    nmap_port(port);
-                    host.ports.port.append(port);
-                }
-
-            if (!reader.atEnd())
+                else
+                    if (reader.name()=="port"){
+                        nmap_port(port);
+                        host.ports.port.append(port);
+                    }
+          }
+          if (!reader.atEnd())
                 reader.readNext();
-            }
+      }
       while (reader.name()!="ports");
 }
 
@@ -373,7 +391,7 @@ void NMap::nmap_os(Host &host) {
          do{
             if (!reader.atEnd())
                 reader.readNext();
-            if ((!reader.isEndElement()) && (reader.name()!=""))
+            if ((!reader.isEndElement()) && (reader.name()!="")){
                 if (reader.name()=="portused"){
                     nmap_os_portused(portused);
                     host.os.portused.append(portused);
@@ -383,6 +401,7 @@ void NMap::nmap_os(Host &host) {
                     nmap_os_match(osmatch);
                     host.os.osmatch.append(osmatch);
                 }
+             }
          }
         while (reader.name()!="os");
 }
@@ -481,16 +500,16 @@ void NMap::nmap_os_portused(Portused &portused){
 
 void NMap::nmap_port(Port &port) {
     do{
-        if (!reader.isEndElement())
-
+        if (!reader.isEndElement()){
             if (reader.name()=="port")
                 nmap_port_port(port);
             else
                 if (reader.name()=="state")
                     nmap_port_state(port);
-            else
-                if (reader.name()=="service")
-                    nmap_port_service(port);
+                else
+                   if (reader.name()=="service")
+                       nmap_port_service(port);
+        }
 
         if (!reader.atEnd())
             reader.readNext();

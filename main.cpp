@@ -21,6 +21,12 @@ int main(int argc, char *argv[])
     qDebug ()<< nmap->nmap_ports_open("192.168.1.1");
     qDebug ()<< nmap->nmap_is_host_up("192.168.1.35");
     qDebug ()<<"ES UN ROUTER"<< nmap->is_router("192.168.1.1");
+    for (i=0;i<256;i++){
+        qDebug ()<< i;
+        qDebug ()<< NmapScan.host[i].address.addr ;
+    qDebug ()<< NmapScan.host[i].hostnames.hostname.name ;
+    qDebug ()<< NmapScan.host[i].hostnames.hostname.type ;
+    }
 
 /*
 
