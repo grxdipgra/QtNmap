@@ -19,10 +19,9 @@ NMap::~NMap() {//Destructor
 
 void NMap::copy_nmapscan(NMapScan &tmp_nmapscan) {
    tmp_nmapscan = nmapscan;
-
 }
 
-/*******************************nmap_ejecuta_scan*************************************
+/*******************************nmap_run_scan*************************************
  * Realiza el escaneo de equipos y puertos pasados por parametro.
  * El resultado lo guarda en reader, que es de tipo QXmlStreamReader
  ************************************************************************************/
@@ -49,7 +48,7 @@ int NMap::nmap_num_host_up(){
     return nmapscan.host.count();
 }
 
-/***************************nmap_is_open_port_nmapscan************************
+/***************************nmap_is_open_port************************
  * Devuelve true si el puerto port esta abierto en el equipo pasado por ip
  * Usa nmapscan, es decir necesita haber hecho la busqueda nmap antes
  * **************************************************************************/
@@ -80,7 +79,7 @@ QList <QString> NMap::nmap_hosts_up(){
 return lista;
 }
 
-/************************nmap_port_open***************************************
+/************************nmap_ports_open***************************************
  * Devuelve los puertos abiertos de la ip pasada por parametro
  * *************************************************************************/
 QList <QString> NMap::nmap_ports_open(QString ip){
@@ -95,7 +94,7 @@ QList <QString> NMap::nmap_ports_open(QString ip){
 return puertos;
 }
 
-/************************nmap_hosts_up***************************************
+/************************nmap_is_hosts_up***************************************
  * Devuelve true si la ip pasada por parametro está en la lista de host up
  * *************************************************************************/
 bool NMap::nmap_is_host_up (QString ip){
@@ -124,7 +123,7 @@ bool NMap::is_win (QString ip){
 return false;
 }
 
-/************************is_linux***************************************
+/************************is_router***************************************
  * Devuelve true si el equipo es un router (lo mas probable)
  * *************************************************************************/
 bool NMap::is_router (QString ip){
@@ -136,7 +135,7 @@ bool NMap::is_router (QString ip){
 return false;
 }
 
-/************************nmap_hosts_up***************************************
+/************************is_printer***************************************
  * Devuelve true si el equipo tiene abierto el puerto 9100. Se supone printer
  * *************************************************************************/
 bool NMap::is_printer (QString ip){
